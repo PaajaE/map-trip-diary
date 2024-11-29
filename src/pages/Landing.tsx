@@ -1,8 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Map, Camera, Mountain, Route, Shield, Cloud } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { LanguagePicker } from '../components/common/LanguagePicker';
 
 export function Landing() {
+  const { t } = useTranslation();
+
   return (
     <div className="min-h-screen">
       {/* Hero Section with Map Background */}
@@ -18,31 +22,34 @@ export function Landing() {
         </div>
         
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
+          <div className="absolute top-4 right-4">
+            <LanguagePicker />
+          </div>
           <div className="text-center">
             <div className="flex justify-center mb-6">
               <Map className="h-16 w-16 text-indigo-400" />
             </div>
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight">
-              <span className="block">Document Your</span>
+              <span className="block">{t('landing.hero.title')}</span>
               <span className="block bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-indigo-200">
-                Outdoor Adventures
+                {t('landing.hero.subtitle')}
               </span>
             </h1>
             <p className="mt-6 max-w-lg mx-auto text-xl text-gray-300">
-              Create beautiful memories of your family trips with photos, maps, and nature observations.
+              {t('landing.hero.description')}
             </p>
             <div className="mt-10 flex justify-center gap-4">
               <Link
                 to="/login"
                 className="px-8 py-3 text-lg font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 transition-colors duration-200 shadow-lg hover:shadow-xl"
               >
-                Get Started
+                {t('landing.hero.getStarted')}
               </Link>
               <a
                 href="#features"
                 className="px-8 py-3 text-lg font-medium rounded-lg bg-white/10 text-white hover:bg-white/20 transition-colors duration-200 backdrop-blur-sm"
               >
-                Learn More
+                {t('landing.hero.learnMore')}
               </a>
             </div>
           </div>
@@ -61,10 +68,10 @@ export function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-              Everything you need to document your trips
+              {t('landing.features.title')}
             </h2>
             <p className="mt-4 text-xl text-gray-600">
-              Simple and intuitive tools to capture your outdoor experiences
+              {t('landing.features.subtitle')}
             </p>
           </div>
 
@@ -73,9 +80,11 @@ export function Landing() {
               <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
                 <Map className="h-6 w-6 text-indigo-600" />
               </div>
-              <h3 className="mt-4 text-xl font-medium text-gray-900">Interactive Maps</h3>
+              <h3 className="mt-4 text-xl font-medium text-gray-900">
+                {t('landing.features.maps.title')}
+              </h3>
               <p className="mt-2 text-gray-600">
-                Track your routes and mark points of interest on detailed topographic maps.
+                {t('landing.features.maps.description')}
               </p>
             </div>
 
@@ -83,9 +92,11 @@ export function Landing() {
               <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
                 <Camera className="h-6 w-6 text-indigo-600" />
               </div>
-              <h3 className="mt-4 text-xl font-medium text-gray-900">Photo Gallery</h3>
+              <h3 className="mt-4 text-xl font-medium text-gray-900">
+                {t('landing.features.photos.title')}
+              </h3>
               <p className="mt-2 text-gray-600">
-                Organize trip photos with GPS locations and create beautiful memories.
+                {t('landing.features.photos.description')}
               </p>
             </div>
 
@@ -93,74 +104,13 @@ export function Landing() {
               <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center">
                 <Mountain className="h-6 w-6 text-indigo-600" />
               </div>
-              <h3 className="mt-4 text-xl font-medium text-gray-900">Nature Log</h3>
+              <h3 className="mt-4 text-xl font-medium text-gray-900">
+                {t('landing.features.nature.title')}
+              </h3>
               <p className="mt-2 text-gray-600">
-                Document plants, animals, and geological features you discover.
+                {t('landing.features.nature.description')}
               </p>
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Benefits Section */}
-      <div className="bg-gray-50 py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            <div className="flex items-start space-x-4">
-              <div className="shrink-0">
-                <Route className="h-6 w-6 text-indigo-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">Offline Access</h3>
-                <p className="mt-2 text-gray-600">
-                  Access your trips and maps even without internet connection.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4">
-              <div className="shrink-0">
-                <Shield className="h-6 w-6 text-indigo-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">Private & Secure</h3>
-                <p className="mt-2 text-gray-600">
-                  Your data is encrypted and stored securely.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start space-x-4">
-              <div className="shrink-0">
-                <Cloud className="h-6 w-6 text-indigo-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-medium text-gray-900">Cloud Sync</h3>
-                <p className="mt-2 text-gray-600">
-                  Automatically sync across all your devices.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* CTA Section */}
-      <div className="bg-gradient-to-br from-indigo-600 to-indigo-800">
-        <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
-              Start documenting your adventures today
-            </h2>
-            <p className="mt-4 text-xl text-indigo-100">
-              Free for personal use
-            </p>
-            <Link
-              to="/login"
-              className="mt-8 inline-block px-8 py-3 text-lg font-medium rounded-lg bg-white text-indigo-600 hover:bg-indigo-50 transition-colors duration-200 shadow-lg hover:shadow-xl"
-            >
-              Sign up now
-            </Link>
           </div>
         </div>
       </div>

@@ -1,7 +1,19 @@
 import { format, parse, isValid } from 'date-fns';
+import { cs, enUS } from 'date-fns/locale';
+import i18next from 'i18next';
+
+const locales = {
+  cs,
+  en: enUS
+};
+
+function getLocale() {
+  const language = i18next.language.split('-')[0];
+  return locales[language as keyof typeof locales] || enUS;
+}
 
 export function formatDateForDisplay(dateString: string | null): string {
-  if (!dateString) return 'No date';
+  if (!dateString) return i18next.t('common.noDate', 'No date');
   
   try {
     // First try parsing as ISO date
@@ -14,13 +26,13 @@ export function formatDateForDisplay(dateString: string | null): string {
 
     if (!isValid(date)) {
       console.warn('Invalid date:', dateString);
-      return 'Invalid date';
+      return i18next.t('common.invalidDate', 'Invalid date');
     }
 
-    return format(date, 'MMMM d, yyyy');
+    return format(date, 'PPP', { locale: getLocale() });
   } catch (error) {
     console.error('Error formatting date:', error);
-    return 'Invalid date';
+    return i18next.t('common.invalidDate', 'Invalid date');
   }
 }
 

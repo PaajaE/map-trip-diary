@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Map, ArrowLeft } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { supabase } from '../../services/supabase/client';
 import { useAuthStore } from '../../store/authStore';
+import { LanguagePicker } from '../../components/common/LanguagePicker';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -11,6 +13,7 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const user = useAuthStore(state => state.user);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (user) {
@@ -31,7 +34,7 @@ export function Login() {
 
       if (error) throw error;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -49,9 +52,9 @@ export function Login() {
       });
 
       if (error) throw error;
-      setError('Please check your email for verification link');
+      setError(t('auth.verificationEmail'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : t('common.error'));
     } finally {
       setLoading(false);
     }
@@ -61,18 +64,21 @@ export function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
         <div>
+          <div className="absolute top-4 right-4">
+            <LanguagePicker />
+          </div>
           <Link 
             to="/" 
             className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 mb-8"
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
-            Back to Home
+            {t('common.back')}
           </Link>
           <div className="flex justify-center">
             <Map className="h-12 w-12 text-indigo-600" />
           </div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Trip Map Diary
+            {t('trips.title')}
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -89,7 +95,7 @@ export function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Email address"
+                placeholder={t('auth.email')}
               />
             </div>
             <div>
@@ -99,7 +105,7 @@ export function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
-                placeholder="Password"
+                placeholder={t('auth.password')}
               />
             </div>
           </div>
@@ -113,7 +119,7 @@ export function Login() {
               {loading ? (
                 <div className="h-5 w-5 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
-                'Sign in'
+                t('auth.signIn')
               )}
             </button>
             <button
@@ -121,7 +127,7 @@ export function Login() {
               disabled={loading}
               className="group relative w-1/2 ml-4 flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50"
             >
-              Sign up
+              {t('auth.signUp')}
             </button>
           </div>
         </form>
