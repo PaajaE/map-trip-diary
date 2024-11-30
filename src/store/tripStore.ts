@@ -12,7 +12,7 @@ interface TripState {
   createTrip: (input: CreateTripInput) => Promise<void>;
 }
 
-export const useTripStore = create<TripState>((set) => ({
+export const useTripStore = create<TripState>((set, get) => ({
   trips: [],
   currentTrip: null,
   loading: false,
@@ -21,7 +21,18 @@ export const useTripStore = create<TripState>((set) => ({
     set({ loading: true, error: null });
     try {
       const trips = await tripService.getTrips();
-      set({ trips, loading: false });
+      console.log('Fetched trips:', trips); // Debug log
+      
+      // Validate trips data
+      const validTrips = trips.filter(trip => {
+        if (!trip.id) {
+          console.warn('Found trip without ID:', trip);
+          return false;
+        }
+        return true;
+      });
+
+      set({ trips: validTrips, loading: false });
     } catch (error) {
       console.error('Error fetching trips:', error);
       set({ 
@@ -34,6 +45,12 @@ export const useTripStore = create<TripState>((set) => ({
     set({ loading: true, error: null });
     try {
       const trip = await tripService.getTripById(id);
+      console.log('Fetched trip by ID:', trip); // Debug log
+      
+      if (!trip.id) {
+        throw new Error('Retrieved trip has no ID');
+      }
+      
       set({ currentTrip: trip, loading: false });
     } catch (error) {
       console.error('Error fetching trip:', error);
@@ -46,6 +63,12 @@ export const useTripStore = create<TripState>((set) => ({
   createTrip: async (input: CreateTripInput) => {
     try {
       const trip = await tripService.createTrip(input);
+      console.log('Created trip:', trip); // Debug log
+      
+      if (!trip.id) {
+        throw new Error('Created trip has no ID');
+      }
+      
       set(state => ({
         trips: [trip, ...state.trips]
       }));

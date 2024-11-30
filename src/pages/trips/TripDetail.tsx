@@ -60,7 +60,7 @@ export function TripDetail() {
             <Calendar className="h-5 w-5 mr-2" />
             {formatDateForDisplay(currentTrip.trip_date)}
           </div>
-          {currentTrip.location && (
+          {currentTrip?.location && (
             <div className="flex items-center">
               <MapPin className="h-5 w-5 mr-2" />
               <span>

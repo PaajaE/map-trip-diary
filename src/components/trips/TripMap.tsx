@@ -1,82 +1,36 @@
-import React, { useEffect, useRef } from 'react';
-import Map from 'ol/Map';
-import View from 'ol/View';
-import TileLayer from 'ol/layer/Tile';
-import XYZ from 'ol/source/XYZ';
+import { useState } from 'react';
 import { fromLonLat } from 'ol/proj';
-import Feature from 'ol/Feature';
-import Point from 'ol/geom/Point';
-import { Vector as VectorLayer } from 'ol/layer';
-import { Vector as VectorSource } from 'ol/source';
-import { Style, Icon } from 'ol/style';
-import { mapyCZService } from '../../services/mapycz/api';
-import 'ol/ol.css';
+import type { Trip } from '../../types/supabase';
+import { BaseMap } from '../map/BaseMap';
+import { TripMarker } from '../map/TripMarker';
+import { TripTrack } from '../map/TripTrack';
+import Map from 'ol/Map';
 
 interface TripMapProps {
-  location: {
-    lat: number;
-    lng: number;
-  };
+  trip: Trip;
 }
 
-export function TripMap({ location }: TripMapProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<Map | null>(null);
+export function TripMap({ trip }: TripMapProps) {
+  const [map, setMap] = useState<Map | null>(null);
+  
+  if (!trip?.location) return null;
 
-  useEffect(() => {
-    if (!mapRef.current || mapInstance.current) return;
-
-    const turistTiles = mapyCZService.getTileUrl('turist');
-    const turistLayer = new TileLayer({
-      source: new XYZ({
-        url: turistTiles.url,
-        minZoom: turistTiles.minZoom,
-        maxZoom: turistTiles.maxZoom,
-      }),
-    });
-
-    // Create marker
-    const markerFeature = new Feature({
-      geometry: new Point(fromLonLat([location.lng, location.lat])),
-    });
-
-    markerFeature.setStyle(
-      new Style({
-        image: new Icon({
-          anchor: [0.5, 1],
-          src: 'https://cdn.mapmarker.io/api/v1/pin?size=50&background=%23DC2626&icon=fa-map-marker&color=%23FFFFFF',
-          scale: 0.7,
-        }),
-      })
-    );
-
-    const vectorSource = new VectorSource({
-      features: [markerFeature],
-    });
-
-    const vectorLayer = new VectorLayer({
-      source: vectorSource,
-    });
-
-    // Create map
-    mapInstance.current = new Map({
-      target: mapRef.current,
-      layers: [turistLayer, vectorLayer],
-      view: new View({
-        center: fromLonLat([location.lng, location.lat]),
-        zoom: 13,
-      }),
-    });
-
-    return () => {
-      if (mapInstance.current) {
-        mapInstance.current.setTarget(undefined);
-        mapInstance.current = null;
-      }
-    };
-  }, [location]);
+  const center = fromLonLat([trip.location.lng, trip.location.lat]);
 
   return (
-    <div ref={mapRef} className="w-full h-full" />
+    <div className="h-96 rounded-lg overflow-hidden shadow-md">
+      <BaseMap 
+        center={center} 
+        zoom={13}
+        onMapInit={setMap}
+      >
+        {map && (
+          <>
+            <TripMarker map={map} trip={trip} />
+            {trip?.gpx_data && <TripTrack map={map} trip={trip} />}
+          </>
+        )}
+      </BaseMap>
+    </div>
   );
 }

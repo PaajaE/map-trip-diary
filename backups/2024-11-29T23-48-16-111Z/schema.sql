@@ -1,10 +1,10 @@
 -- Enable required extensions
 create extension if not exists "uuid-ossp";
 create extension if not exists postgis;
-create extension if not exists pg_trgm;
-create extension if not exists unaccent;
+create extension if not exists pg_trgm; -- For better text search
+create extension if not exists unaccent; -- For better search with accents
 
--- Create custom text search configuration for Czech
+-- Create custom text search configuration
 create text search configuration cs ( copy = simple );
 alter text search configuration cs
   alter mapping for word, asciiword, asciihword, hword, hword_asciipart, hword_part
@@ -30,7 +30,7 @@ create table if not exists trips (
     setweight(to_tsvector('cs', coalesce(title, '')), 'A') ||
     setweight(to_tsvector('cs', coalesce(description, '')), 'B')
   ) stored,
-  title_trigram text generated always as (lower(unaccent(title))) stored
+  title_trigram text generated always as (lower(unaccent(title))) stored -- For fuzzy search
 );
 
 -- Create photos table with better constraints and metadata
@@ -42,7 +42,7 @@ create table if not exists photos (
   is_cover_photo boolean default false not null,
   created_at timestamptz default now() not null,
   location geometry(Point, 4326),
-  metadata jsonb default '{}'::jsonb not null,
+  metadata jsonb default '{}'::jsonb not null, -- Store EXIF and other metadata
   constraint one_cover_photo_per_trip unique (trip_id, is_cover_photo) 
     where (is_cover_photo = true)
 );
@@ -52,7 +52,7 @@ create table if not exists tags (
   id uuid default uuid_generate_v4() primary key,
   name text unique not null,
   created_at timestamptz default now() not null,
-  usage_count int default 0 not null
+  usage_count int default 0 not null -- Track popularity
 );
 
 -- Create trip_tags junction table with timestamp
@@ -292,16 +292,7 @@ begin
             'name', p.name,
             'url', p.url,
             'is_cover_photo', p.is_cover_photo,
-            'created_at', p.created_at,
-            'location', case 
-              when p.location is not null then
-                json_build_object(
-                  'lat', st_y(p.location),
-                  'lng', st_x(p.location)
-                )
-              else null
-            end,
-            'metadata', p.metadata
+            'created_at', p.created_at
           ) order by p.is_cover_photo desc, p.created_at desc
         ) filter (where p.name is not null)
         from photos p
@@ -405,7 +396,7 @@ create policy "Users can manage trip tags"
   ));
 
 -- Create materialized view for popular tags
-create materialized view if not exists popular_tags as
+create materialized view popular_tags as
 select t.id, t.name, t.usage_count
 from tags t
 where t.usage_count > 0

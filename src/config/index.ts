@@ -2,14 +2,16 @@ import { Config } from './types';
 
 const config: Config = {
   supabase: {
-    url: import.meta.env.VITE_SUPABASE_URL || 'http://localhost:54321',
-    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJzdXBhYmFzZSIsImlhdCI6MTYwMDAwMDAwMCwiZXhwIjoxNjAwMDAwMDAwfQ.5XVQx3Zv8E8Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q5Q',
-  },
-  mapyCZ: {
-    apiKey: import.meta.env.VITE_MAPY_CZ_API_KEY || '',
-    baseUrl: 'https://api.mapy.cz/v1',
+    url: import.meta.env.VITE_SUPABASE_URL,
+    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
+    serviceRoleKey: import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY,
   },
   isDevelopment: import.meta.env.DEV,
 };
+
+// Validate required config
+if (!config.supabase.url || !config.supabase.anonKey) {
+  console.error('Missing required Supabase configuration!');
+}
 
 export default config;

@@ -12,8 +12,8 @@ function getLocale() {
   return locales[language as keyof typeof locales] || enUS;
 }
 
-export function formatDateForDisplay(dateString: string | null): string {
-  if (!dateString) return i18next.t('common.noDate', 'No date');
+export function formatDateForDisplay(dateString: string | null | undefined): string {
+  if (!dateString) return i18next.t('common.noDate');
   
   try {
     // First try parsing as ISO date
@@ -26,17 +26,17 @@ export function formatDateForDisplay(dateString: string | null): string {
 
     if (!isValid(date)) {
       console.warn('Invalid date:', dateString);
-      return i18next.t('common.invalidDate', 'Invalid date');
+      return i18next.t('common.invalidDate');
     }
 
     return format(date, 'PPP', { locale: getLocale() });
   } catch (error) {
     console.error('Error formatting date:', error);
-    return i18next.t('common.invalidDate', 'Invalid date');
+    return i18next.t('common.invalidDate');
   }
 }
 
-export function formatDateForInput(dateString: string | null): string {
+export function formatDateForInput(dateString: string | null | undefined): string {
   if (!dateString) return new Date().toISOString().split('T')[0];
   
   try {
@@ -60,7 +60,7 @@ export function formatDateForInput(dateString: string | null): string {
   }
 }
 
-export function formatDateForAPI(dateString: string | null): string {
+export function formatDateForAPI(dateString: string | null | undefined): string {
   if (!dateString) return format(new Date(), 'yyyy-MM-dd');
   
   try {

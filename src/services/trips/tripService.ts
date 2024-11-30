@@ -1,5 +1,5 @@
 import { supabase } from '../supabase/client';
-import type { Trip } from '../../types/supabase';
+import type { Trip, Photo } from '../../types/supabase';
 
 export interface CreateTripInput {
   title: string;
@@ -11,7 +11,108 @@ export interface CreateTripInput {
   gpx_file?: File;
 }
 
-export class TripService {
+class TripService {
+  private async getSignedUrl(path: string): Promise<string | null> {
+    try {
+      const { data } = await supabase.storage
+        .from('trip-photos')
+        .createSignedUrl(path, 60 * 60); // 1 hour expiration
+
+      return data?.signedUrl || null;
+    } catch (error) {
+      console.error('Error getting signed URL:', error);
+      return null;
+    }
+  }
+
+  private async uploadPhoto(file: File, userId: string, tripId: number): Promise<string> {
+    const filePath = `${userId}/${tripId}/${Date.now()}-${file.name}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('trip-photos')
+      .upload(filePath, file);
+
+    if (uploadError) throw uploadError;
+
+    return filePath;
+  }
+
+  private async mapPhotos(photos: any[]): Promise<Photo[]> {
+    if (!Array.isArray(photos)) return [];
+
+    const validPhotos = photos.filter(photo => photo && photo.name);
+    const photoPromises = validPhotos.map(async photo => {
+      console.log({ photo })
+      let url = photo.url;
+
+      // If we have a name but URL is missing or invalid, get a signed URL
+      if (photo.name) {
+        const signedUrl = await this.getSignedUrl(photo.name);
+        if (signedUrl) {
+          url = signedUrl;
+        }
+      }
+
+      return {
+        id: photo.id,
+        trip_id: photo.trip_id,
+        name: photo.name,
+        url: url || '',
+        is_cover_photo: Boolean(photo.is_cover_photo),
+        created_at: photo.created_at || new Date().toISOString(),
+        location: photo.location ? {
+          lat: photo.location.lat,
+          lng: photo.location.lng
+        } : null,
+        metadata: photo.metadata || {},
+        user_id: photo.user_id,
+        date: photo.date,
+        note: photo.note,
+        title: photo.title,
+        gps_reference: photo.gps_reference
+      };
+    });
+
+    return Promise.all(photoPromises);
+  }
+
+  private async mapTrip(rawTrip: any): Promise<Trip> {
+    if (!rawTrip) throw new Error('Invalid trip data');
+
+    // Map location from lat/long
+    let location = null;
+    if (rawTrip.lat && rawTrip.long) {
+      location = {
+        lat: Number(rawTrip.lat),
+        lng: Number(rawTrip.long)
+      };
+    }
+
+    // Map photos with signed URLs
+    const photos = await this.mapPhotos(rawTrip.photos || []);
+
+    // Map trip path if available
+    const trip_path = rawTrip.trip_path || null;
+
+    return {
+      id: rawTrip.trip_id || 0,
+      user_id: rawTrip.user_id || '',
+      title: rawTrip.title || '',
+      description: rawTrip.description || null,
+      created_at: rawTrip.created_at || null,
+      trip_date: rawTrip.trip_date || null,
+      location,
+      trip_path,
+      gpx_file: rawTrip.gpx_file || null,
+      photos,
+      tags: Array.isArray(rawTrip.tags) ? rawTrip.tags : [],
+      gps_reference: rawTrip.gps_reference,
+      search_vector_cs: rawTrip.search_vector_cs,
+      search_vector_en: rawTrip.search_vector_en,
+      title_trigram: rawTrip.title_trigram
+    };
+  }
+
   async getTrips(): Promise<Trip[]> {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
@@ -19,26 +120,42 @@ export class TripService {
     const { data, error } = await supabase
       .rpc('get_user_trips', { cur_user_id: user.id });
 
-    if (error) throw error;
-    return data || [];
+    if (error) {
+      console.error('Error fetching trips:', error);
+      throw error;
+    }
+
+    const tripPromises = (data || []).map(async trip => {
+      try {
+        return await this.mapTrip(trip);
+      } catch (error) {
+        console.error('Error mapping trip:', error, trip);
+        return null;
+      }
+    });
+
+    const trips = await Promise.all(tripPromises);
+    return trips.filter((trip): trip is Trip => Boolean(trip?.id));
   }
 
   async getTripById(id: string): Promise<Trip> {
-    if (!id) throw new Error('Trip ID is required');
-
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error('User not authenticated');
 
     const { data, error } = await supabase
       .rpc('get_user_trips', { cur_user_id: user.id });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Error fetching trip:', error);
+      throw error;
+    }
+
     if (!data) throw new Error('No trips found');
 
-    const trip = data.find(t => t.id === id);
-    if (!trip) throw new Error('Trip not found');
+    const rawTrip = data.find(t => t.trip_id?.toString() === id);
+    if (!rawTrip) throw new Error('Trip not found');
 
-    return trip;
+    return this.mapTrip(rawTrip);
   }
 
   async createTrip(input: CreateTripInput): Promise<Trip> {
@@ -53,7 +170,7 @@ export class TripService {
         title: input.title,
         description: input.description,
         trip_date: input.trip_date,
-        gps_reference: input.location 
+        gps_reference: input.location
           ? `POINT(${input.location.lng} ${input.location.lat})`
           : null,
       })
@@ -66,28 +183,28 @@ export class TripService {
     // Upload photos if any
     if (input.photos?.length) {
       const photoPromises = input.photos.map(async (photo, index) => {
-        const fileExt = photo.name.split('.').pop();
-        const filePath = `${user.id}/${trip.id}/${Date.now()}-${index}.${fileExt}`;
-        
-        const { error: uploadError } = await supabase.storage
-          .from('trip-photos')
-          .upload(filePath, photo);
+        try {
+          const filePath = await this.uploadPhoto(photo, user.id, trip.id);
 
-        if (uploadError) throw uploadError;
+          const url = supabase.storage
+            .from('trip-photos')
+            .getPublicUrl(`photos/${filePath}`);
+          console.log({ url })
+          const { error: photoError } = await supabase
+            .from('photos')
+            .insert({
+              trip_id: trip.id,
+              name: filePath,
+              url: url,
+              is_cover_photo: index === 0,
+              metadata: {} // Add any EXIF data here if needed
+            });
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('trip-photos')
-          .getPublicUrl(filePath);
-
-        const { error: photoError } = await supabase
-          .from('photos')
-          .insert({
-            trip_id: trip.id,
-            url: publicUrl,
-            is_cover_photo: index === 0,
-          });
-
-        if (photoError) throw photoError;
+          if (photoError) throw photoError;
+        } catch (error) {
+          console.error('Error uploading photo:', error);
+          throw error;
+        }
       });
 
       await Promise.all(photoPromises);
@@ -135,7 +252,7 @@ export class TripService {
     if (input.gpx_file) {
       const fileExt = input.gpx_file.name.split('.').pop();
       const filePath = `${user.id}/${trip.id}/track.${fileExt}`;
-      
+
       const { error: uploadError } = await supabase.storage
         .from('trip-gpx')
         .upload(filePath, input.gpx_file);
@@ -144,14 +261,14 @@ export class TripService {
 
       const { error: updateError } = await supabase
         .from('trips')
-        .update({ gpx_data: filePath })
+        .update({ gpx_file: filePath })
         .eq('id', trip.id);
 
       if (updateError) throw updateError;
     }
 
     // Fetch the complete trip with all related data
-    return this.getTripById(trip.id);
+    return this.getTripById(trip.id.toString());
   }
 }
 

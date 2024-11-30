@@ -12,6 +12,13 @@ export function PhotoGallery({ trip_id, photos }: PhotoGalleryProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
 
+  // Filter out invalid photos
+  const validPhotos = photos.filter(photo => photo && photo.url);
+
+  if (validPhotos.length === 0) {
+    return null;
+  }
+
   const openLightbox = (index: number) => {
     setCurrentPhotoIndex(index);
     setLightboxOpen(true);
@@ -22,11 +29,11 @@ export function PhotoGallery({ trip_id, photos }: PhotoGalleryProps) {
   };
 
   const goToPrevious = () => {
-    setCurrentPhotoIndex((prev) => (prev === 0 ? photos.length - 1 : prev - 1));
+    setCurrentPhotoIndex((prev) => (prev === 0 ? validPhotos.length - 1 : prev - 1));
   };
 
   const goToNext = () => {
-    setCurrentPhotoIndex((prev) => (prev === photos.length - 1 ? 0 : prev + 1));
+    setCurrentPhotoIndex((prev) => (prev === validPhotos.length - 1 ? 0 : prev + 1));
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
@@ -53,7 +60,7 @@ export function PhotoGallery({ trip_id, photos }: PhotoGalleryProps) {
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {photos.map((photo, index) => (
+        {validPhotos.map((photo, index) => (
           <div
             key={generateListKey(photo, index, 'photo', (p) => p.id)}
             className="relative aspect-square cursor-pointer group"
@@ -94,7 +101,7 @@ export function PhotoGallery({ trip_id, photos }: PhotoGalleryProps) {
           
           <div className="max-h-[90vh] max-w-[90vw]">
             <img
-              src={photos[currentPhotoIndex].url}
+              src={validPhotos[currentPhotoIndex].url}
               alt={`Photo ${currentPhotoIndex + 1}`}
               className="max-h-[90vh] max-w-[90vw] object-contain"
             />
